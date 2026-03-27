@@ -1,43 +1,36 @@
 import os
 from flask import Flask, request, jsonify
-import google.generativeai as genai
+from google import genai
 
 app = Flask(__name__)
 
-# This part is critical - it fetches the key you put in Render
-GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
+# Fetch the key from Render
+API_KEY = os.environ.get("GEMINI_API_KEY")
 
-if GEMINI_KEY:
-    genai.configure(api_key=GEMINI_KEY)
-else:
-    print("CRITICAL ERROR: GEMINI_API_KEY is missing!")
-
-model = genai.GenerativeModel('gemini-1.5-flash')
+# Setup the new Client
+client = genai.Client(api_key=API_KEY)
 
 @app.route('/')
 def home():
-    return "Dhrubo's AI Server is Live!"
+    return "Dhrubo's AI is Online and Modernized!"
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
     try:
-        # Get the data from ManyChat
         data = request.get_json()
-        if not data:
-            return jsonify({"reply": "No data received"}), 400
-            
         user_message = data.get("message", "Hi")
         
-        # Ask Gemini for the answer
-        response = model.generate_content(user_message)
+        # New syntax for Gemini 1.5 Flash
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=user_message
+        )
         
-        # Send the answer back to ManyChat
         return jsonify({"reply": response.text})
-        
+    
     except Exception as e:
-        print(f"Error: {str(e)}")
-        # This will tell us EXACTLY what went wrong in the ManyChat response body
-        return jsonify({"reply": f"Error: {str(e)}"}), 500
+        print(f"Error: {e}")
+        return jsonify({"reply": f"Technical issue: {str(e)}"}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
